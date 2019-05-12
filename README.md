@@ -17,13 +17,33 @@ This repo is based on pytorch impl [original here](https://github.com/xinntao/ES
 
 # Usage
 
+1. Clone this github repo.
+```
+git clone https://github.com/kozistr/ESRGAN-tensorflow
+cd ESRGAN-tensorflow
+```
+
+2. install required packages (if needed)
+```
+# with pip
+python -m pip install -r requirements.txt
+
+# with conda
+conda install --yes --file requirements.txt
+```
+
+3. run scripts!
+
 For training,
+
 ```python3 train.py```
 
 For evaluation,
+
 ```python3 evaluate.py```
 
 For inference,
+
 ```python3 inference.py --src test-lr.png --dst test-hr.png```
 
 # Results
