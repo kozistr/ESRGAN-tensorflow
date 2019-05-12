@@ -15,6 +15,31 @@ This repo is based on pytorch impl [original here](https://github.com/xinntao/ES
 
 # Repo-Tree
 
+```
+│
+├── output  (generated images)
+│     ├── ...
+│     └── xxx.png
+├── tb_logs (tensorboard records)
+│     ├── [unique id]
+│     │     ├── *.ckpt
+│     │     ├── *.tsv
+│     │     ├── *.meta
+│     │     └── ...
+│     └── [unique id]
+├── requirements.txt  (requirements)
+├── readme.md         (explaination)
+├── evaluate.py       (evaluator)
+├── inference.py      (inferencer)
+├── metrics.py        (useful metrics)
+├── model.py          (ESRGAN model)
+├── train.py          (trainer)
+├── config.py         (global configurations)
+├── tfutils.py        (useful TF utils)
+├── utils.py          (image processing utils)
+└── dataloader.py     (DataSet loader)
+```
+
 # Usage
 
 1. Clone this github repo.
