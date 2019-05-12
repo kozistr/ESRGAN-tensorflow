@@ -3,11 +3,28 @@ Enhanced Super Resolution Generative Adversarial Network in tensorflow
 
 This repo is based on pytorch impl [original here](https://github.com/xinntao/ESRGAN)
 
-# Explanation
+**Work In Process :)**
 
-# Requirement
+# Requirements
+
+* python 2.x / 3.x
+* tensorflow-gpu 1.x
+* opencv
+* glob
+* tqdm
+
+# Repo-Tree
 
 # Usage
+
+For training,
+```python3 train.py```
+
+For evaluation,
+```python3 evaluate.py```
+
+For inference,
+```python3 inference.py --src test-lr.png --dst test-hr.png```
 
 # Results
 
