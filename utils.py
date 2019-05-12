@@ -6,6 +6,38 @@ from glob import glob
 from tqdm import tqdm
 
 
+def bgr2ycbcr(img, only_y=True):
+    """ bgr image to ycbcr image,
+    inspired by https://github.com/xinntao/BasicSR/blob/master/metrics/calculate_PSNR_SSIM.py
+    :param img: np.array. expected types, uint8 & float
+        uint8 : [0, 255]
+        float : [0, 1]
+    :param only_y: bool. return only y channel
+    :return: np.array.
+    """
+    _dtype = img.dtype
+    if not _dtype == np.uint8:
+        img *= 255.
+
+    img.astype(np.float32)
+
+    if only_y:
+        rlt = np.dot(img,
+                     [24.966, 128.553, 65.481]) / 255. + 16.
+    else:
+        rlt = np.matmul(img, [
+            [24.966, 112., -18.214],
+            [128.553, -74.203, -93.786],
+            [65.481, -37.797, 112.]
+        ]) / 255. + [16, 128, 128]
+
+    if _dtype == np.uint8:
+        rlt = rlt.round()
+    else:
+        rlt /= 255.
+    return rlt.astype(_dtype)
+
+
 def load_image_from_file(fn, mode='rgb', normalize=False, norm_scale="0,1"):
     """ loading an image from file name
     :param fn: str. file name
