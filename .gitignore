@@ -16,3 +16,20 @@ bin-release/
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# Dotenv
+.env
+
+# Virtualenv
+.venv
+venv/
+ENV/
+
+# IDE Settings
+.idea/
+
+# Data files
+*.npy
+*.h5
+*.ckpt
+*.csv
