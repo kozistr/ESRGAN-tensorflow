@@ -1,0 +1,4 @@
+tensorflow-gpu
+glob
+tqdm
+opencv-python
