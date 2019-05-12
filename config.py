@@ -34,8 +34,8 @@ network_arg.add_argument('--activation', type=str, default="leaky_relu", choices
 # DataSet
 data_arg = add_arg_group('DataSet')
 data_arg.add_argument('--dataset', type=str, default="D:\\DataSet\\SR\\DIV2K\\")
-data_arg.add_argument('--lr_img_size', type=int, default=96, choices=[64, 96])
-data_arg.add_argument('--hr_img_size', type=int, default=192, choices=[128, 192])
+data_arg.add_argument('--lr_img_size', type=int, default=96, choices=[96, 128])
+data_arg.add_argument('--hr_img_size', type=int, default=192, choices=[192, 256])
 
 # Train/Test hyper-parameters
 train_arg = add_arg_group('Training')
