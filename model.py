@@ -24,6 +24,7 @@ class ESRGAN:
     def __init__(self,
                  sess: tf.Session,
                  dataset_path: str = "D://DataSet/SR/DIV2K/",
+                 dataset_type: str = "DIV2K",
                  input_shape: Tuple = (128, 128, 3),
                  batch_size: int = 1,
                  patch_size: int = 16,
@@ -54,6 +55,7 @@ class ESRGAN:
                  seed: int = 13371337):
         self.sess = sess
         self.dataset_path = dataset_path
+        self.dataset_type = dataset_type
         self.input_shape = input_shape
         self.batch_size = batch_size
         self.patch_size = patch_size
@@ -131,13 +133,20 @@ class ESRGAN:
     def setup(self):
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-        _no = sorted([int(x.split('/')[-1][:6])
-                      for x in glob(os.path.join(self.dataset_path, "*.jpg_face"))])
-        print("[*] total {} images".format(len(_no)))
+        if self.dataset_type == "DIV2K":
+            _lr_path = self.dataset_path + "/DIV2K_train_LR_bicubic/X4/"
+            _hr_path = self.dataset_type + "/DIV2K_train_HR/"
+        elif self.dataset_path == "Flickr2K":
+            _lr_path = self.dataset_path + "/Flickr2K_LR_bicubic/X4/"
+            _hr_path = self.dataset_type + "/Flickr2K_HR/"
+        else:
+            raise NotImplementedError("[-] not supported dataset yet :(")
 
-        self.data = [(self.dataset_path + "{:06d}.jpg_face".format(i),
-                      self.dataset_path + "{:06d}.jpg_hair".format(i))
-                     for i in _no]
+        _lr_paths = sorted(glob(os.path.join(_lr_path, "*.png")))
+        _hr_paths = sorted(glob(os.path.join(_hr_path, "*.png")))
+        self.data = [(lr_p, hr_p) for lr_p, hr_p in zip(_lr_paths, _hr_paths)]
+
+        print("[*] total {} images".format(len(self.data)))
 
     @staticmethod
     def summary():
