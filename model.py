@@ -19,6 +19,8 @@ from .tfutils import deconv2d
 from .losses import generator_loss
 from .losses import discriminator_loss
 
+from .vgg19 import VGG19
+
 
 class ESRGAN:
     def __init__(self,
@@ -227,7 +229,7 @@ class ESRGAN:
                        scope: str = "res_block_down"):
         with tf.variable_scope(scope):
             with tf.variable_scope("residual_1"):
-                x = conv2d(x, ch, kernel=3, stride=2, pad=1, use_bias=use_bias, sn=sn)
+                x = conv2d(x_init, ch, kernel=3, stride=2, pad=1, use_bias=use_bias, sn=sn)
                 x = tf.nn.relu(x)
 
             with tf.variable_scope("residual_2"):
@@ -306,7 +308,7 @@ class ESRGAN:
         d_interp = self.discriminator(interp, reuse=True)
 
         grad = tf.gradients(d_interp, interp)[0]
-        grad_norm = tf.norm(ops.flatten(grad), axis=1)
+        grad_norm = tf.norm(tf.layers.flatten(grad), axis=1)
 
         gp: float = 0.
         if self.gan_type == "wgan-lp":
@@ -316,7 +318,7 @@ class ESRGAN:
         return gp
 
     def build_data_loader(self):
-        self.data_loader = ImageDataLoader()
+        self.data_loader = ImageDataLoader(patch_size=self.patch_size)
 
         inputs = tf.data.Dataset.from_tensor_slices(self.data)
         inputs = inputs. \
@@ -338,10 +340,10 @@ class ESRGAN:
             bgr = tf.concat([b - self.vgg_mean[0],
                              g - self.vgg_mean[1],
                              r - self.vgg_mean[2]], axis=3)
-            self.vgg19 = vgg19.VGG19(bgr)
+            self.vgg19 = VGG19(bgr)
 
             net = self.vgg19.vgg19_net['conv5_4']
-            return net  # last layer
+            return net
 
     def build_model(self):
         self.build_data_loader()
@@ -363,7 +365,7 @@ class ESRGAN:
             gp = self.gradient_penalty(real=x_hr, fake=g_fake)
 
         self.d_loss = self.d_adv_loss + gp
-        self.rec_loss = tf.reduce_mean(tf.abs(g_fake - orig))
+        self.rec_loss = tf.reduce_mean(tf.abs(g_fake - x_hr))
         self.g_loss = self.weight_adv_loss * self.g_adv_loss + self.weight_rec_loss * self.rec_loss
 
         if self.use_perceptual_loss:
