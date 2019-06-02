@@ -5,6 +5,9 @@ This repo is based on pytorch impl [original here](https://github.com/xinntao/ES
 
 **Work In Process :)**
 
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/kozistr/ESRGAN-tensorflow.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/kozistr/ESRGAN-tensorflow/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/kozistr/ESRGAN-tensorflow.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/kozistr/ESRGAN-tensorflow/context:python)
+
 # Requirements
 
 * python 2.x / 3.x
