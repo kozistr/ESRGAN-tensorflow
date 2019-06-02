@@ -29,7 +29,6 @@ This repo is based on pytorch impl [original here](https://github.com/xinntao/ES
 │     └── [unique id]
 ├── requirements.txt  (requirements)
 ├── readme.md         (explaination)
-├── evaluate.py       (evaluator)
 ├── losses.py         (useful losses)
 ├── metrics.py        (useful metrics)
 ├── model.py          (ESRGAN model)
