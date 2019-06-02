@@ -141,10 +141,10 @@ class ESRGAN:
 
         if self.dataset_type == "DIV2K":
             _lr_path = self.dataset_path + "/DIV2K_train_LR_bicubic/X4/"
-            _hr_path = self.dataset_type + "/DIV2K_train_HR/"
-        elif self.dataset_path == "Flickr2K":
+            _hr_path = self.dataset_path + "/DIV2K_train_HR/"
+        elif self.dataset_type == "Flickr2K":
             _lr_path = self.dataset_path + "/Flickr2K_LR_bicubic/X4/"
-            _hr_path = self.dataset_type + "/Flickr2K_HR/"
+            _hr_path = self.dataset_path + "/Flickr2K_HR/"
         else:
             raise NotImplementedError("[-] not supported dataset yet :(")
 
