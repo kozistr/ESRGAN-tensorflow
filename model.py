@@ -14,7 +14,7 @@ from .utils import ImageDataLoader
 
 from .tfutils import dense
 from .tfutils import conv2d
-from .tfutils import deconv2d
+from .tfutils import sub_pixel_conv2d
 
 from .losses import generator_loss
 from .losses import discriminator_loss
@@ -168,11 +168,13 @@ class ESRGAN:
                   use_bias: bool = True, sn: bool = True,
                   scope: str = "res_block"):
         with tf.variable_scope(scope):
-            x = conv2d(x_init, ch, kernel=kernel, stride=1, pad=pad, use_bias=use_bias, sn=sn,
+            x = conv2d(x_init, ch, kernel=kernel, stride=1, pad=pad,
+                       use_bias=use_bias, sn=sn,
                        scope="conv2d_1")
-            x = tf.nn.relu(x)
+            x = tf.nn.leaky_relu(x, alpha=.2)
 
-            x = conv2d(x, ch, kernel=kernel, stride=1, pad=pad, use_bias=use_bias, sn=sn,
+            x = conv2d(x, ch, kernel=kernel, stride=1, pad=pad,
+                       use_bias=use_bias, sn=sn,
                        scope="conv2d_2")
             return x + x_init
 
@@ -185,16 +187,16 @@ class ESRGAN:
 
             for i in range(n_blocks):
                 x = tf.concat(x_concat, axis=-1)
+
                 x = conv2d(x, ch // 2, kernel=3, stride=1, pad=1, use_bias=use_bias, sn=sn,
                            scope="conv2d_{}".format(i))
-                x = tf.nn.relu(x)
+                x = tf.nn.leaky_relu(x, alpha=.2)
                 x_concat.append(x)
 
             x = tf.concat(x_concat, axis=-1)
 
             x = conv2d(x, ch, kernel=3, stride=1, pad=1, use_bias=use_bias, sn=sn,
                        scope="conv2d_proj".format(i))
-            x = tf.nn.relu(x)
             return x
 
     def residual_dense_block(self, x_init, ch: int, n_blocks: int = 3, beta: float = .2,
@@ -209,37 +211,17 @@ class ESRGAN:
             return x
 
     @staticmethod
-    def res_block_up(x_init, ch: int,
-                     use_bias: bool = True, sn: bool = True,
-                     scope: str = "res_block_up"):
-        with tf.variable_scope(scope):
-            with tf.variable_scope("residual_1"):
-                x = deconv2d(x_init, ch, kernel=3, stride=2, use_bias=use_bias, sn=sn)
-                x = tf.nn.relu(x)
-
-            with tf.variable_scope("residual_2"):
-                x = deconv2d(x, ch, kernel=3, stride=1, use_bias=use_bias, sn=sn)
-                x = tf.nn.relu(x)
-
-            with tf.variable_scope("skip_conn"):
-                x_skip = deconv2d(x_init, ch, kernel=3, stride=2, use_bias=use_bias, sn=sn)
-
-            x = x + x_skip
-            x = tf.nn.relu(x)
-            return x
-
-    @staticmethod
     def res_block_down(x_init, ch: int,
                        use_bias: bool = True, sn: bool = True,
                        scope: str = "res_block_down"):
         with tf.variable_scope(scope):
             with tf.variable_scope("residual_1"):
                 x = conv2d(x_init, ch, kernel=3, stride=2, pad=1, use_bias=use_bias, sn=sn)
-                x = tf.nn.relu(x)
+                x = tf.nn.leaky_relu(x, alpha=.2)
 
             with tf.variable_scope("residual_2"):
                 x = conv2d(x, ch, kernel=3, stride=1, pad=1, use_bias=use_bias, sn=sn)
-                x = tf.nn.relu(x)
+                x = tf.nn.leaky_relu(x, alpha=.2)
 
             with tf.variable_scope("skip_conn"):
                 x_init = conv2d(x_init, ch, kernel=3, stride=2, pad=1, use_bias=use_bias, sn=sn)
@@ -258,41 +240,55 @@ class ESRGAN:
                 x = self.residual_dense_block(x, ch=ch, use_bias=True, sn=self.use_sn,
                                               scope="RRDB-{}".format(nb + 1))
 
-            x = conv2d(x, ch, kernel=3, stride=1, pad=1, scope="conv2d_fin")
-            x = tf.nn.relu(x)
+            x = conv2d(x, ch, kernel=3, stride=1, pad=1, use_bias=True, scope="conv2d_trunk")
 
             x += x_lsc
 
+            # up-sampling
+            scale: int = int(np.log2(self.patch_size))
+            for i in range(scale):
+                x = conv2d(x, ch * 4, kernel=3, stride=1, pad=1, scope="conv2d_up_{}".format(i))
+                x = sub_pixel_conv2d(x, f=None, s=scale)
+                x = tf.nn.leaky_relu(x, alpha=.2)
+
+            x = conv2d(x, ch, kernel=3, stride=1, pad=1,
+                       use_bias=True, sn=self.use_sn, scope="conv2d_hr")
+            x = tf.nn.leaky_relu(x, alpha=.2)
+
             x = conv2d(x, self.input_shape[-1], kernel=3, stride=1, pad=1,
-                       use_bias=False, sn=self.use_sn, scope="gen")
+                       use_bias=True, sn=self.use_sn, scope="conv2d_last")
             x = tf.sigmoid(x)
             return x
 
     def discriminator(self, x_hr, reuse: bool = False):
+        """ original paper maybe used VGG-like model, but i just custom-ed it"""
         with tf.variable_scope("discriminator", reuse=reuse):
             ch: int = self.n_feats
 
             x = x_hr
 
-            x = self.res_block_down(x, ch * 1, use_bias=False, sn=self.use_sn,
+            x = self.res_block_down(x, ch * 1, use_bias=True, sn=self.use_sn,
                                     scope="res_block_down_1")
 
-            x = self.res_block_down(x, ch * 2, use_bias=False, sn=self.use_sn,
+            x = self.res_block_down(x, ch * 2, use_bias=True, sn=self.use_sn,
                                     scope="res_block_down_2")
 
-            x = self.res_block_down(x, ch * 4, use_bias=False, sn=self.use_sn,
+            x = self.res_block_down(x, ch * 4, use_bias=True, sn=self.use_sn,
                                     scope="res_block_down_3")
 
-            x = self.res_block_down(x, ch * 8, use_bias=False, sn=self.use_sn,
+            x = self.res_block_down(x, ch * 8, use_bias=True, sn=self.use_sn,
                                     scope="res_block_down_4")
 
-            x = self.res_block_down(x, ch * 16, use_bias=False, sn=self.use_sn,
+            x = self.res_block_down(x, ch * 16, use_bias=True, sn=self.use_sn,
                                     scope="res_block_down_5")
 
-            x = self.res_block(x, ch * 8, use_bias=False, sn=self.use_sn, scope="res_block")
-            x = tf.nn.relu(x)
+            x = self.res_block(x, ch * 16, use_bias=False, sn=self.use_sn, scope="res_block")
+            x = tf.nn.leaky_relu(x, alpha=.2)
 
-            x = tf.reduce_mean(x, axis=[1, 2])
+            x = tf.layers.flatten(x)
+
+            x = dense(x, units=128, sn=self.use_sn, scope="dense_1")
+            x = tf.nn.leaky_relu(x, alpha=.2)
 
             x = dense(x, units=1, sn=self.use_sn, scope="disc")
             return x
