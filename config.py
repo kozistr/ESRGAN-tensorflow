@@ -4,7 +4,7 @@ args_list = []
 parser = argparse.ArgumentParser()
 
 
-def add_arg_group(name):
+def add_arg_group(name: str):
     """
     :param name: A str. Argument group.
     :return: An list. Arguments.
