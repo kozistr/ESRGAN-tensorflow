@@ -478,9 +478,5 @@ class ESRGAN:
     def test(self):
         self.sess.run(tf.global_variables_initializer())
 
-        start_time = time()
-
-        global_step = self.load_ckpt()
-
     def __str__(self) -> str:
         return self.model_name
