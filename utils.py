@@ -7,6 +7,12 @@ from glob import glob
 from tqdm import tqdm
 
 
+seed: int = 13371337
+
+np.random.seed(seed)
+tf.set_random_seed(seed)
+
+
 class ImageDataLoader:
     def __init__(self,
                  image_shape: tuple = (128, 128),
@@ -26,6 +32,18 @@ class ImageDataLoader:
         hr = tf.image.decode_png(hr, channels=self.channels)
         hr = tf.cast(hr, dtype=tf.float32) / 255.
         hr = tf.reshape(hr, self.image_shape + (self.channels,))
+
+        # augmentations
+        if np.random.randint(0, 2) == 0:
+            lr = tf.image.flip_up_down(lr)
+            hr = tf.image.flip_up_down(hr)
+
+        if np.random.randint(0, 2) == 0:
+            lr = tf.image.rot90(lr)
+            hr = tf.image.rot90(hr)
+
+        # split into patches
+
         return lr, hr
 
 
