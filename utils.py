@@ -10,9 +10,11 @@ from tqdm import tqdm
 class ImageDataLoader:
     def __init__(self,
                  image_shape: tuple = (128, 128),
-                 channels: int = 3):
+                 channels: int = 3,
+                 patch_size: int = 16):
         self.image_shape = image_shape
         self.channels = channels
+        self.patch_size = patch_size
 
     def pre_processing(self, fn):
         lr = tf.read_file(fn[0])
