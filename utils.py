@@ -14,20 +14,20 @@ tf.set_random_seed(seed)
 
 class ImageDataLoader:
     def __init__(self,
-                 image_shape: tuple = (128, 128),
+                 patch_shape: tuple = (128, 128),
                  channels: int = 3,
                  patch_size: int = 16):
-        self.image_shape = image_shape
+        self.patch_shape = patch_shape
         self.channels = channels
         self.patch_size = patch_size
         self.scale = int(np.sqrt(self.patch_size))
 
         self.lr_patch_shape = (
-            self.image_shape[0],
-            self.image_shape[1])
+            self.patch_shape[0],
+            self.patch_shape[1])
         self.hr_patch_shape = (
-            self.image_shape[0] * self.scale,
-            self.image_shape[1] * self.scale
+            self.patch_shape[0] * self.scale,
+            self.patch_shape[1] * self.scale
         )
 
     def random_crop(self, x_lr, x_hr):
@@ -48,12 +48,10 @@ class ImageDataLoader:
         lr = tf.read_file(fn[0])
         lr = tf.image.decode_png(lr, channels=self.channels)
         lr = tf.cast(lr, dtype=tf.float32) / 255.
-        lr = tf.reshape(lr, self.image_shape + (self.channels,))
 
         hr = tf.read_file(fn[1])
         hr = tf.image.decode_png(hr, channels=self.channels)
         hr = tf.cast(hr, dtype=tf.float32) / 255.
-        hr = tf.reshape(hr, self.image_shape + (self.channels,))
 
         # random crop
         lr, hr = self.random_crop(lr, hr)
