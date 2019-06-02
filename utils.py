@@ -1,12 +1,33 @@
 import os
 import cv2
 import numpy as np
+import tensorflow as tf
 
 from glob import glob
 from tqdm import tqdm
 
 
-def bgr2ycbcr(img, only_y=True):
+class ImageDataLoader:
+    def __init__(self,
+                 image_shape: tuple = (128, 128),
+                 channels: int = 3):
+        self.image_shape = image_shape
+        self.channels = channels
+
+    def pre_processing(self, fn):
+        lr = tf.read_file(fn[0])
+        lr = tf.image.decode_png(lr, channels=self.channels)
+        lr = tf.cast(lr, dtype=tf.float32) / 255.
+        lr = tf.reshape(lr, self.image_shape + (self.channels,))
+
+        hr = tf.read_file(fn[1])
+        hr = tf.image.decode_png(hr, channels=self.channels)
+        hr = tf.cast(hr, dtype=tf.float32) / 255.
+        hr = tf.reshape(hr, self.image_shape + (self.channels,))
+        return lr, hr
+
+
+def bgr2ycbcr(img: np.array, only_y: bool = True):
     """ bgr image to ycbcr image,
     inspired by https://github.com/xinntao/BasicSR/blob/master/metrics/calculate_PSNR_SSIM.py
     :param img: np.array. expected types, uint8 & float
@@ -38,7 +59,8 @@ def bgr2ycbcr(img, only_y=True):
     return rlt.astype(_dtype)
 
 
-def load_image_from_file(fn, mode='rgb', normalize=False, norm_scale="0,1"):
+def load_image_from_file(fn: str, mode: str = 'rgb',
+                         normalize: bool = False, norm_scale: str = "0,1"):
     """ loading an image from file name
     :param fn: str. file name
     :param mode: str. mode to load image
@@ -62,7 +84,8 @@ def load_image_from_file(fn, mode='rgb', normalize=False, norm_scale="0,1"):
     return img
 
 
-def load_images_from_path(path, ext="png", mode='rgb', normalize=False, norm_scale="0,1"):
+def load_images_from_path(path: str, ext: str = "png", mode: str = 'rgb',
+                          normalize: bool = False, norm_scale: str = "0,1"):
     """ loading an image from file name
     :param path: str. file path
     :param ext: str. extension
