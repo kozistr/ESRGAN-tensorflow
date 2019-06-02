@@ -44,8 +44,10 @@ class ESRGAN:
                  use_perceptual_loss: bool = True,
                  vgg19_model_path: str = "./imagenet-vgg-verydeep-19.mat",
                  n_critic: int = 1,
-                 d_lr: float = 4e-4,  # 2e-4
+                 d_lr: float = 1e-4,  # 2e-4
                  g_lr: float = 1e-4,  # 5e-5
+                 lr_schedule_steps: tuple = (int(5e4), int(1e5), int(2e5), int(3e5)),
+                 lr_decay_factor: float = .5,
                  beta1: float = .9,
                  beta2: float = .999,
                  grad_clip_norm: float = 1.,
@@ -77,6 +79,8 @@ class ESRGAN:
         self.lambda_gp = lambda_gp
         self.d_lr = d_lr
         self.g_lr = g_lr
+        self.lr_schedule_steps = lr_schedule_steps
+        self.lr_decay_factor = lr_decay_factor
         self.beta1 = beta1
         self.beta2 = beta2
         self.grad_clip_norm = grad_clip_norm
@@ -160,7 +164,8 @@ class ESRGAN:
         slim.model_analyzer.analyze_vars(g_vars, print_info=True)
 
     @staticmethod
-    def res_block(x_init, ch: int, kernel: int = 3, pad: int = 1, use_bias: bool = True, sn: bool = True,
+    def res_block(x_init, ch: int, kernel: int = 3, pad: int = 1,
+                  use_bias: bool = True, sn: bool = True,
                   scope: str = "res_block"):
         with tf.variable_scope(scope):
             x = conv2d(x_init, ch, kernel=kernel, stride=1, pad=pad, use_bias=use_bias, sn=sn,
@@ -257,7 +262,6 @@ class ESRGAN:
             x = tf.nn.relu(x)
 
             x += x_lsc
-            x = tf.nn.relu(x)
 
             x = conv2d(x, self.input_shape[-1], kernel=3, stride=1, pad=1,
                        use_bias=False, sn=self.use_sn, scope="gen")
@@ -318,7 +322,8 @@ class ESRGAN:
         return gp
 
     def build_data_loader(self):
-        self.data_loader = ImageDataLoader(patch_size=self.patch_size)
+        self.data_loader = ImageDataLoader(patch_shape=self.input_shape,
+                                           patch_size=self.patch_size)
 
         inputs = tf.data.Dataset.from_tensor_slices(self.data)
         inputs = inputs. \
@@ -327,7 +332,7 @@ class ESRGAN:
                                                      batch_size=self.batch_size,
                                                      num_parallel_batches=self.n_threads,
                                                      drop_remainder=True)). \
-            apply(tf.data.experimental.prefetch_to_device(device='/gpu:0', buffer_size=self.batch_size))
+            apply(tf.data.experimental.prefetch_to_device(device='/gpu:0', buffer_size=self.patch_size))
 
         self.iterators = inputs.make_one_shot_iterator()
         self.inputs = self.iterators.get_next()
